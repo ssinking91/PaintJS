@@ -50,6 +50,7 @@ function startPainting() {
 //        - offsetX : 이벤트 대상 객체에서의 상대적 마우스 x좌표 위치를 반환
 //        - offsetY : 이벤트 대상 객체에서의 상대적 마우스 y좌표 위치를 반환
 
+// 마우스 클릭 후 그리기
 function onMouseMove(event) {
   console.log(event.offsetX, event.offsetY);
   const x = event.offsetX;
@@ -63,17 +64,20 @@ function onMouseMove(event) {
   }
 }
 
+// 색상 변경
 function handleColorClick(event) {
   const color = event.target.style.backgroundColor;
   ctx.strokeStyle = color;
   ctx.fillStyle = color;
 }
 
+// 글씨 두께 변경
 function handleRangeChange(event) {
   const size = event.target.value;
   ctx.lineWidth = size;
 }
 
+// Fill, Paint 변경
 function handleModeClick() {
   if (filling === true) {
     filling = false;
@@ -84,6 +88,7 @@ function handleModeClick() {
   }
 }
 
+// Fill 일시 canvas 전체 색상 변경
 function handleCanvasClick() {
   if (filling) {
     // fillRect(x, y, width, height) : 색칠된 직사각형을 그립니다.
@@ -96,6 +101,7 @@ function handleCM(event) {
   event.preventDefault();
 }
 
+// canvas 그림 다운로드
 function handleSaveClick() {
   // canvas.toDataURL() : 마우스 오른쪽 단추로 클릭해 메뉴를 열 때 발생.
   const image = canvas.toDataURL();
