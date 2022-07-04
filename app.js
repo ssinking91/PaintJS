@@ -17,23 +17,6 @@ canvas.height = CANVAS_SIZE;
 // fillRect(x, y, width, height) : 색칠된 직사각형을 그립니다.
 // strokeStyle = color : 도형의 윤곽선 색을 설정합니다.
 // lineWidth = value : 이후 그려질 선의 두께를 설정합니다.
-ctx.fillStyle = "white";
-ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
-ctx.strokeStyle = INITIAL_COLOR;
-ctx.fillStyle = INITIAL_COLOR;
-ctx.lineWidth = 2.5;
-
-let mode = "brush";
-let painting = false;
-let filling = false;
-
-function stopPainting() {
-  painting = false;
-}
-
-function startPainting() {
-  painting = true;
-}
 
 // ✔️ 경로 그리기
 // 1. 경로를 생성합니다.
@@ -53,12 +36,50 @@ function startPainting() {
 //        - offsetX : 이벤트 대상 객체에서의 상대적 마우스 x좌표 위치를 반환
 //        - offsetY : 이벤트 대상 객체에서의 상대적 마우스 y좌표 위치를 반환
 
+ctx.fillStyle = "white";
+ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+ctx.strokeStyle = INITIAL_COLOR;
+ctx.fillStyle = INITIAL_COLOR;
+ctx.lineWidth = 2.5;
+
+let mode = "brush";
+let painting = false;
+let filling = false;
+
+/////////////////////////////////// 데스크탑 ///////////////////////////////////
+
+function clickStartPainting() {
+  painting = true;
+  document.body.style.overflow = "hidden"; // 스크롤 방지
+}
+
+function clickStopPainting() {
+  painting = false;
+  document.body.style.overflow = "unset"; // 스크롤 방지 해제
+}
+
+// 커서 이미지 변경
+function changeCursor(mode) {
+  if (mode === "fill") {
+    canvas.style.cursor = "url(brush-fill.svg), auto";
+  } else if (mode === "brush") {
+    canvas.style.cursor = "url(pencil-fill.svg), auto";
+  } else if (mode === "erase") {
+    canvas.style.cursor = "url(eraser-fill.svg), auto";
+  } else {
+    canvas.style.cursor = "auto";
+  }
+}
+
 // 마우스 클릭 후 그리기
 function onMouseMove(event) {
-  console.log(event.offsetX, event.offsetY);
+  console.log(event);
   const x = event.offsetX;
   const y = event.offsetY;
-  if (mode === "brush") {
+
+  changeCursor(mode);
+
+  if (mode === "fill" || mode === "brush") {
     if (!painting) {
       ctx.beginPath();
       ctx.moveTo(x, y);
@@ -71,8 +92,57 @@ function onMouseMove(event) {
       ctx.clearRect(
         x - ctx.lineWidth / 2,
         y - ctx.lineWidth / 2,
-        ctx.lineWidth * 3,
-        ctx.lineWidth * 3
+        ctx.lineWidth * 5,
+        ctx.lineWidth * 5
+      );
+    }
+  }
+}
+
+/////////////////////////////////// 모바일 ///////////////////////////////////
+
+function touchStartPainting(event) {
+  painting = true;
+  document.body.style.overflow = "hidden"; // 스크롤 방지
+
+  const x = event.touches[0].clientX - event.target.offsetLeft;
+  const y =
+    event.touches[0].clientY -
+    event.target.offsetTop +
+    document.documentElement.scrollTop;
+
+  ctx.beginPath();
+  ctx.moveTo(x, y);
+}
+
+function touchStopPainting() {
+  painting = false;
+  document.body.style.overflow = "unset"; // 스크롤 방지 해제
+}
+
+// 터치 후 그리기
+// 데스크탑 페이지의 경우, x: e.offsetX, y: e.offsetY로 쉽게 마우스의 좌표를 알 수 있었다.
+// 하지만 모바일 페이지에서는 다른 방법으로 구해야했다.
+function onTouchMove(event) {
+  console.log(event);
+  const x = event.touches[0].clientX - event.target.offsetLeft;
+  const y =
+    event.touches[0].clientY -
+    event.target.offsetTop +
+    document.documentElement.scrollTop;
+
+  if (mode === "fill" || mode === "brush") {
+    if (painting) {
+      ctx.lineTo(x, y);
+      ctx.stroke();
+    }
+  } else if (mode === "erase") {
+    if (painting) {
+      ctx.clearRect(
+        x - ctx.lineWidth / 2,
+        y - ctx.lineWidth / 2,
+        ctx.lineWidth * 5,
+        ctx.lineWidth * 5
       );
     }
   }
@@ -105,7 +175,7 @@ function handleRangeChange(event) {
 // FillBtn 클릭
 function handleFillClick() {
   filling = true;
-  mode = "brush";
+  mode = "fill";
 }
 
 // PaintBtn 클릭
@@ -144,14 +214,20 @@ function handleCM(event) {
 }
 
 if (canvas) {
+  // 데스크탑
   canvas.addEventListener("mousemove", onMouseMove);
-  canvas.addEventListener("mousedown", startPainting);
-  canvas.addEventListener("mouseup", stopPainting);
-  canvas.addEventListener("mouseleave", stopPainting);
+  canvas.addEventListener("mousedown", clickStartPainting);
+  canvas.addEventListener("mouseup", clickStopPainting);
+  canvas.addEventListener("mouseleave", clickStopPainting);
   canvas.addEventListener("click", handleCanvasClick);
 
   // contextmenu : 마우스 오른쪽 메뉴 선택 이벤트
   canvas.addEventListener("contextmenu", handleCM);
+
+  // 모바일
+  canvas.addEventListener("touchmove", onTouchMove);
+  canvas.addEventListener("touchstart", touchStartPainting);
+  canvas.addEventListener("touchend", touchStopPainting);
 }
 
 Array.from(colors).forEach((color) =>
