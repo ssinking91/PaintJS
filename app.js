@@ -5,6 +5,7 @@ const range = document.getElementById("jsRange");
 const fillBtn = document.getElementById("jsFill");
 const paintBtn = document.getElementById("jsPaint");
 const eraseBtn = document.getElementById("jsErase");
+const rectBtn = document.getElementById("jsRect");
 const saveBtn = document.getElementById("jsSave");
 
 const INITIAL_COLOR = "#2c2c2c";
@@ -45,7 +46,7 @@ ctx.lineWidth = 2.5;
 let mode = "brush";
 let painting = false;
 let filling = false;
-
+let shape = "rect";
 /////////////////////////////////// 데스크탑 ///////////////////////////////////
 
 function clickStartPainting() {
@@ -96,6 +97,9 @@ function onMouseMove(event) {
         ctx.lineWidth * 5
       );
     }
+  } else if (mode === "drag") {
+    if (painting && shape === "rect") {
+    }
   }
 }
 
@@ -121,8 +125,8 @@ function touchStopPainting() {
 }
 
 // 터치 후 그리기
-// 데스크탑 페이지의 경우, x: e.offsetX, y: e.offsetY로 쉽게 마우스의 좌표를 알 수 있었다.
-// 하지만 모바일 페이지에서는 다른 방법으로 구해야했다.
+// 데스크탑 페이지의 경우, x: e.offsetX, y: e.offsetY로 쉽게 마우스의 좌표를 알 수 있었음
+// 하지만 모바일 페이지에서는 다른 방법으로 구해야 함
 function onTouchMove(event) {
   console.log(event);
   const x = event.touches[0].clientX - event.target.offsetLeft;
@@ -190,6 +194,12 @@ function handleEraseClick() {
   mode = "erase";
 }
 
+function handleRectBtnClick() {
+  filling = false;
+  mode = "drag";
+  shape = "rect";
+}
+
 // Fill 일시 canvas 전체 색상 변경
 function handleCanvasClick() {
   if (filling) {
@@ -253,6 +263,10 @@ if (paintBtn) {
 
 if (eraseBtn) {
   eraseBtn.addEventListener("click", handleEraseClick);
+}
+
+if (rectBtn) {
+  rectBtn.addEventListener("click", handleRectBtnClick);
 }
 
 if (saveBtn) {
