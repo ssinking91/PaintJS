@@ -113,3 +113,45 @@ Painting Board made with VanillaJS
 <br/>
 
 👀 참고 : closePath() : 현재 점 위치와 시작점 위치를 직선으로 이어서 도형을 닫음. 이미 도형이 닫혔거나 한 점만 존재한다면, 이 메소드는 아무것도 하지 않음
+
+<br/>
+
+---
+
+<br/>
+
+4.  ✔️ 캔버스(canvas)를 이용한 도형 지우기
+
+    👉 clearRect(x, y, width, height)
+
+    (1) 전체 캔버스 지우기
+
+    ```javascript
+    const canvas = document.getElementById("canvas");
+    const ctx = canvas.getContext("2d");
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ```
+
+    (2) 캔버스의 일부 지우기
+
+    ```javascript
+    const canvas = document.getElementById("canvas");
+    const ctx = canvas.getContext("2d");
+
+    // Draw yellow background
+    ctx.beginPath();
+    ctx.fillStyle = "#ff6";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Draw blue triangle
+    ctx.beginPath();
+    ctx.fillStyle = "blue";
+    ctx.moveTo(20, 20);
+    ctx.lineTo(180, 20);
+    ctx.lineTo(130, 130);
+    ctx.closePath();
+    ctx.fill();
+
+    // Clear part of the canvas
+    ctx.clearRect(10, 10, 120, 100);
+    ```

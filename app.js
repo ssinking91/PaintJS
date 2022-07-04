@@ -2,7 +2,9 @@ const canvas = document.getElementById("jsCanvas");
 const ctx = canvas.getContext("2d");
 const colors = document.getElementsByClassName("jsColor");
 const range = document.getElementById("jsRange");
-const mode = document.getElementById("jsMode");
+const fillBtn = document.getElementById("jsFill");
+const paintBtn = document.getElementById("jsPaint");
+const eraseBtn = document.getElementById("jsErase");
 const saveBtn = document.getElementById("jsSave");
 
 const INITIAL_COLOR = "#2c2c2c";
@@ -21,6 +23,7 @@ ctx.strokeStyle = INITIAL_COLOR;
 ctx.fillStyle = INITIAL_COLOR;
 ctx.lineWidth = 2.5;
 
+let mode = "brush";
 let painting = false;
 let filling = false;
 
@@ -55,12 +58,23 @@ function onMouseMove(event) {
   console.log(event.offsetX, event.offsetY);
   const x = event.offsetX;
   const y = event.offsetY;
-  if (!painting) {
-    ctx.beginPath();
-    ctx.moveTo(x, y);
-  } else {
-    ctx.lineTo(x, y);
-    ctx.stroke();
+  if (mode === "brush") {
+    if (!painting) {
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+    } else {
+      ctx.lineTo(x, y);
+      ctx.stroke();
+    }
+  } else if (mode === "erase") {
+    if (painting) {
+      ctx.clearRect(
+        x - ctx.lineWidth / 2,
+        y - ctx.lineWidth / 2,
+        ctx.lineWidth * 3,
+        ctx.lineWidth * 3
+      );
+    }
   }
 }
 
@@ -78,14 +92,32 @@ function handleRangeChange(event) {
 }
 
 // Fill, Paint 변경
-function handleModeClick() {
-  if (filling === true) {
-    filling = false;
-    mode.innerText = "Fill";
-  } else {
-    filling = true;
-    mode.innerText = "Paint";
-  }
+// function handleModeClick() {
+//   if (filling === true) {
+//     filling = false;
+//     mode.innerText = "Fill";
+//   } else {
+//     filling = true;
+//     mode.innerText = "Paint";
+//   }
+// }
+
+// FillBtn 클릭
+function handleFillClick() {
+  filling = true;
+  mode = "brush";
+}
+
+// PaintBtn 클릭
+function handlePaintClick() {
+  filling = false;
+  mode = "brush";
+}
+
+// EraseBtn 클릭
+function handleEraseClick() {
+  filling = false;
+  mode = "erase";
 }
 
 // Fill 일시 canvas 전체 색상 변경
@@ -96,11 +128,6 @@ function handleCanvasClick() {
   }
 }
 
-// 마우스 우클릭 방지
-function handleCM(event) {
-  event.preventDefault();
-}
-
 // canvas 그림 다운로드
 function handleSaveClick() {
   // canvas.toDataURL() : 마우스 오른쪽 단추로 클릭해 메뉴를 열 때 발생.
@@ -109,6 +136,11 @@ function handleSaveClick() {
   link.href = image;
   link.download = "PaintJS[🎨]";
   link.click();
+}
+
+// 마우스 우클릭 방지
+function handleCM(event) {
+  event.preventDefault();
 }
 
 if (canvas) {
@@ -130,8 +162,21 @@ if (range) {
   range.addEventListener("input", handleRangeChange);
 }
 
-if (mode) {
-  mode.addEventListener("click", handleModeClick);
+// Fill, Paint 변경
+// if (mode) {
+//   mode.addEventListener("click", handleModeClick);
+// }
+
+if (fillBtn) {
+  fillBtn.addEventListener("click", handleFillClick);
+}
+
+if (paintBtn) {
+  paintBtn.addEventListener("click", handlePaintClick);
+}
+
+if (eraseBtn) {
+  eraseBtn.addEventListener("click", handleEraseClick);
 }
 
 if (saveBtn) {
