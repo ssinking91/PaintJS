@@ -37,7 +37,7 @@ canvas.height = CANVAS_SIZE;
 //        - offsetX : 이벤트 대상 객체에서의 상대적 마우스 x좌표 위치를 반환
 //        - offsetY : 이벤트 대상 객체에서의 상대적 마우스 y좌표 위치를 반환
 
-ctx.fillStyle = "white";
+ctx.fillStyle = "transparent";
 ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
 ctx.strokeStyle = INITIAL_COLOR;
 ctx.fillStyle = INITIAL_COLOR;
@@ -47,16 +47,87 @@ let mode = "brush";
 let painting = false;
 let filling = false;
 let shape = "rect";
+let color = INITIAL_COLOR;
+const dragArr = [];
+
+// if (dragArr.length > 1) {
+//   dragArr.forEach((rect) => {
+//     ctx.strokeRect(rect.start_X, rect.start_Y, rect.width, rect.height);
+//   });
+// }
 /////////////////////////////////// 데스크탑 ///////////////////////////////////
 
-function clickStartPainting() {
+function clickStartPainting(event) {
   painting = true;
   document.body.style.overflow = "hidden"; // 스크롤 방지
+
+  const { offsetX, offsetY } = event;
+
+  if (mode === "drag") {
+    if (painting && shape === "rect") {
+      let dragRect = {
+        start_X: offsetX,
+        start_Y: offsetY,
+        width: 0,
+        height: 0,
+        rect_strokeStyle: color,
+      };
+
+      dragArr.push(dragRect);
+    }
+  }
 }
 
-function clickStopPainting() {
-  painting = false;
+function clickStopPainting(event) {
   document.body.style.overflow = "unset"; // 스크롤 방지 해제
+
+  const { offsetX, offsetY } = event;
+
+  if (mode === "drag") {
+    if (painting && shape === "rect") {
+      const width = offsetX - dragArr[dragArr.length - 1].start_X;
+      const height = offsetY - dragArr[dragArr.length - 1].start_Y;
+
+      // 클릭시 영역 선택 방지
+      if (
+        dragArr[dragArr.length - 1].start_X === offsetX ||
+        dragArr[dragArr.length - 1].start_Y === offsetY
+      ) {
+        cancel();
+        return;
+      }
+
+      // drag width, height 추가
+      dragArr[dragArr.length - 1].width = width;
+      dragArr[dragArr.length - 1].height = height;
+
+      if (dragArr.length >= 1) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        dragArr.forEach((rect) => {
+          // strokeStyle = rect.rect_strokeStyle;
+          ctx.strokeRect(rect.start_X, rect.start_Y, rect.width, rect.height);
+        });
+      }
+    }
+  }
+
+  painting = false;
+}
+
+// onMouseLeave 이벤트 : 이벤트 요소 영역 밖으로 이동시
+function cancel() {
+  if (painting) {
+    if (mode === "drag" && shape === "rect") {
+      dragArr.pop();
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      dragArr.forEach((rect) => {
+        strokeStyle = rect.rect_strokeStyle;
+        ctx.strokeRect(rect.start_X, rect.start_Y, rect.width, rect.height);
+      });
+    }
+    painting = false;
+  }
 }
 
 // 커서 이미지 변경
@@ -67,6 +138,8 @@ function changeCursor(mode) {
     canvas.style.cursor = "url(pencil-fill.svg), auto";
   } else if (mode === "erase") {
     canvas.style.cursor = "url(eraser-fill.svg), auto";
+  } else if (mode === "drag") {
+    if (shape === "rect") canvas.style.cursor = "url(square.svg), auto";
   } else {
     canvas.style.cursor = "auto";
   }
@@ -74,7 +147,7 @@ function changeCursor(mode) {
 
 // 마우스 클릭 후 그리기
 function onMouseMove(event) {
-  console.log(event);
+  // console.log(event);
   const x = event.offsetX;
   const y = event.offsetY;
 
@@ -98,7 +171,25 @@ function onMouseMove(event) {
       );
     }
   } else if (mode === "drag") {
-    if (painting && shape === "rect") {
+    if (shape === "rect") {
+      if (!painting) {
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+      } else {
+        ctx.fillStyle = color;
+        ctx.fillRect(
+          dragArr[dragArr.length - 1].start_X,
+          dragArr[dragArr.length - 1].start_Y,
+          x - dragArr[dragArr.length - 1].start_X,
+          y - dragArr[dragArr.length - 1].start_Y
+        );
+        ctx.strokeRect(
+          dragArr[dragArr.length - 1].start_X,
+          dragArr[dragArr.length - 1].start_Y,
+          x - dragArr[dragArr.length - 1].start_X,
+          y - dragArr[dragArr.length - 1].start_Y
+        );
+      }
     }
   }
 }
@@ -154,7 +245,7 @@ function onTouchMove(event) {
 
 // 색상 변경
 function handleColorClick(event) {
-  const color = event.target.style.backgroundColor;
+  color = event.target.style.backgroundColor;
   ctx.strokeStyle = color;
   ctx.fillStyle = color;
 }
@@ -228,7 +319,7 @@ if (canvas) {
   canvas.addEventListener("mousemove", onMouseMove);
   canvas.addEventListener("mousedown", clickStartPainting);
   canvas.addEventListener("mouseup", clickStopPainting);
-  canvas.addEventListener("mouseleave", clickStopPainting);
+  canvas.addEventListener("mouseleave", cancel);
   canvas.addEventListener("click", handleCanvasClick);
 
   // contextmenu : 마우스 오른쪽 메뉴 선택 이벤트
