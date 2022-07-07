@@ -7,6 +7,7 @@ const paintBtn = document.getElementById("jsPaint");
 const eraseBtn = document.getElementById("jsErase");
 const rectBtn = document.getElementById("jsRect");
 const circleBtn = document.getElementById("jsCircle");
+const textBtn = document.getElementById("jsText");
 const saveBtn = document.getElementById("jsSave");
 const preBtn = document.getElementById("jsPre");
 const nextBtn = document.getElementById("jsNext");
@@ -22,6 +23,14 @@ ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
 
 let color = INITIAL_COLOR;
 let lineWidth = 2.5;
+let text_lineWidth;
+
+let font_size = () => {
+  if (canvas.width > 1200) return 36;
+  if (canvas.width > 992) return 30;
+  if (canvas.width > 768) return 24;
+  if (canvas.width > 480) return 18;
+};
 
 let painting = false;
 let filling = false;
@@ -32,6 +41,7 @@ let shape;
 const lineArr = [];
 const rectArr = [];
 const arcArr = [];
+const textArr = [];
 
 let imageData;
 
@@ -40,7 +50,6 @@ let imageData;
 function clickStartPainting(event) {
   painting = true;
   // document.body.style.overflow = "hidden"; // 스크롤 방지
-
   const { offsetX, offsetY } = event;
 
   if (mode === "brush") {
@@ -68,7 +77,6 @@ function clickStartPainting(event) {
 
       rectArr.push(dragRect);
     } else if (painting && shape === "circle") {
-      console.log("clickstart");
       let dragArc = {
         start_X: offsetX,
         start_Y: offsetY,
@@ -80,8 +88,23 @@ function clickStartPainting(event) {
       };
 
       arcArr.push(dragArc);
+    } else if (painting && shape === "text") {
+      console.log("텍스트 시작");
+      let dragText = {
+        text: "",
+        start_X: offsetX,
+        start_Y: offsetY,
+        text_color: color,
+        text_lineWidth: lineWidth,
+
+        font: `bold ${font_size()}px Roboto`,
+      };
+
+      textArr.push(dragText);
     }
   }
+
+  imageData = ctx.getImageData(0, 0, CANVAS_SIZE, CANVAS_SIZE);
 }
 
 function clickStopPainting(event) {
@@ -112,7 +135,6 @@ function clickStopPainting(event) {
       }
     }
     if (painting && shape === "circle") {
-      console.log("clickstop");
       // 클릭시 영역 선택 방지
       if (
         arcArr[arcArr.length - 1].start_X === offsetX ||
@@ -122,13 +144,43 @@ function clickStopPainting(event) {
         return;
       }
     }
+    if (painting && shape === "text") {
+      // 클릭시 영역 선택 방지
+      // if (
+      //   textArr[textArr.length - 1].start_X === offsetX ||
+      //   textArr[textArr.length - 1].start_Y === offsetY
+      // ) {
+      //   cancel();
+      //   return;
+      // }
+
+      const content = prompt("내용은 무엇인가요?");
+
+      if (!content) {
+        cancel();
+        return;
+      }
+
+      textArr[textArr.length - 1].text = content;
+
+      ctx.textAlign = "start";
+      ctx.textBaseline = "top";
+      ctx.fillStyle = `${textArr[textArr.length - 1].text_color}`;
+      ctx.font = `${textArr[textArr.length - 1].font}`;
+
+      ctx.fillText(
+        textArr[textArr.length - 1].text,
+        textArr[textArr.length - 1].start_X,
+        textArr[textArr.length - 1].start_Y
+      );
+    }
   }
 
   imageData = ctx.getImageData(0, 0, CANVAS_SIZE, CANVAS_SIZE);
 
   painting = false;
 
-  console.log(lineArr, rectArr, arcArr);
+  console.log(lineArr, rectArr, arcArr, textArr);
 }
 
 // onMouseLeave 이벤트 : 이벤트 요소 영역 밖으로 이동시
@@ -145,6 +197,10 @@ function cancel() {
       ctx.putImageData(imageData, 0, 0);
     } else if (mode === "drag" && shape === "circle") {
       arcArr.pop();
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.putImageData(imageData, 0, 0);
+    } else if (mode === "drag" && shape === "text") {
+      textArr.pop();
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.putImageData(imageData, 0, 0);
     }
@@ -164,6 +220,7 @@ function changeCursor(mode) {
   } else if (mode === "drag") {
     if (shape === "rect") canvas.style.cursor = "url(square.svg), auto";
     else if (shape === "circle") canvas.style.cursor = "url(circle.svg), auto";
+    else if (shape === "text") canvas.style.cursor = "url(text.svg), auto";
   } else {
     canvas.style.cursor = "auto";
   }
@@ -258,6 +315,29 @@ function onMouseMove(event) {
             ctx.stroke();
           });
         }
+      }
+    } else if (shape === "text") {
+      if (!painting) {
+        ctx.beginPath();
+        ctx.moveTo(offsetX, offsetY);
+      } else {
+        // const rectSx = textArr[textArr.length - 1].start_X;
+        // const rectSy = textArr[textArr.length - 1].start_Y;
+        // const rectWidth = offsetX - textArr[textArr.length - 1].start_X;
+        // const rectHeight = offsetY - textArr[textArr.length - 1].start_Y;
+
+        // font_size = (rectHeight * 2) / 3;
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.putImageData(imageData, 0, 0);
+
+        // if (textArr.length > 0) {
+        //   ctx.strokeStyle = textArr[textArr.length - 1].text_color;
+        //   ctx.fillStyle = textArr[textArr.length - 1].text_color;
+        //   ctx.lineWidth = textArr[textArr.length - 1].text_lineWidth;
+
+        //   ctx.strokeRect(rectSx, rectSy, rectWidth, rectHeight);
+        // }
       }
     }
   }
@@ -373,8 +453,15 @@ function handleCircleBtnClick() {
   shape = "circle";
 }
 
+function handleTextBtnClick() {
+  filling = false;
+  mode = "drag";
+  shape = "text";
+}
+
 // Fill 일시 canvas 전체 색상 변경
-function handleCanvasClick() {
+function handleCanvasClick(event) {
+  // console.log(event);
   if (filling) {
     // fillRect(x, y, width, height) : 색칠된 직사각형을 그립니다.
     ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
@@ -454,6 +541,10 @@ if (rectBtn) {
 
 if (circleBtn) {
   circleBtn.addEventListener("click", handleCircleBtnClick);
+}
+
+if (textBtn) {
+  textBtn.addEventListener("click", handleTextBtnClick);
 }
 
 if (saveBtn) {
