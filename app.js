@@ -6,7 +6,10 @@ const fillBtn = document.getElementById("jsFill");
 const paintBtn = document.getElementById("jsPaint");
 const eraseBtn = document.getElementById("jsErase");
 const rectBtn = document.getElementById("jsRect");
+const circleBtn = document.getElementById("jsCircle");
 const saveBtn = document.getElementById("jsSave");
+const preBtn = document.getElementById("jsPre");
+const nextBtn = document.getElementById("jsNext");
 
 const INITIAL_COLOR = "#2c2c2c";
 const CANVAS_SIZE = 700;
@@ -24,10 +27,13 @@ let painting = false;
 let filling = false;
 
 let mode = "brush";
-let shape = "rect";
+let shape;
 
 const lineArr = [];
-const dragArr = [];
+const rectArr = [];
+const arcArr = [];
+
+let imageData;
 
 /////////////////////////////////// 데스크탑 ///////////////////////////////////
 
@@ -60,7 +66,20 @@ function clickStartPainting(event) {
         rect_lineWidth: lineWidth,
       };
 
-      dragArr.push(dragRect);
+      rectArr.push(dragRect);
+    } else if (painting && shape === "circle") {
+      console.log("clickstart");
+      let dragArc = {
+        start_X: offsetX,
+        start_Y: offsetY,
+        radius: 0,
+        startAngle: 0,
+        endAngle: 2 * Math.PI,
+        arc_color: color,
+        arc_lineWidth: lineWidth,
+      };
+
+      arcArr.push(dragArc);
     }
   }
 }
@@ -70,93 +89,66 @@ function clickStopPainting(event) {
 
   const { offsetX, offsetY } = event;
 
-  if (mode === "drag") {
-    if (painting && shape === "rect") {
-      const width = offsetX - dragArr[dragArr.length - 1].start_X;
-      const height = offsetY - dragArr[dragArr.length - 1].start_Y;
-
-      // 클릭시 영역 선택 방지
+  if (mode === "brush") {
+    if (painting) {
       if (
-        dragArr[dragArr.length - 1].start_X === offsetX ||
-        dragArr[dragArr.length - 1].start_Y === offsetY
+        lineArr[lineArr.length - 1].sX === offsetX ||
+        lineArr[lineArr.length - 1].sY === offsetY
       ) {
         cancel();
         return;
       }
-
-      // drag width, height 추가
-      // dragArr[dragArr.length - 1].width = width;
-      // dragArr[dragArr.length - 1].height = height;
-
-      // if (dragArr.length > 0) {
-      //   dragArr.forEach((rect) => {
-      //     ctx.strokeStyle = rect.rect_color;
-      //     ctx.fillStyle = rect.rect_color;
-      //     ctx.lineWidth = rect.rect_lineWidth;
-
-      //     ctx.strokeRect(rect.start_X, rect.start_Y, rect.width, rect.height);
-      //   });
-      // }
-
-      // if (lineArr.length > 0) {
-      //   lineArr.forEach((line) => {
-      //     ctx.beginPath();
-      //     ctx.moveTo(line.sX, line.sY);
-
-      //     line.path.forEach(({ line_X, line_Y }) => {
-      //       ctx.strokeStyle = line.line_color;
-      //       ctx.lineWidth = line.line_lineWidth;
-
-      //       ctx.lineTo(line_X, line_Y);
-      //       ctx.stroke();
-      //     });
-      //   });
-      // }
+    }
+  }
+  if (mode === "drag") {
+    if (painting && shape === "rect") {
+      // 클릭시 영역 선택 방지
+      if (
+        rectArr[rectArr.length - 1].start_X === offsetX ||
+        rectArr[rectArr.length - 1].start_Y === offsetY
+      ) {
+        cancel();
+        return;
+      }
+    }
+    if (painting && shape === "circle") {
+      console.log("clickstop");
+      // 클릭시 영역 선택 방지
+      if (
+        arcArr[arcArr.length - 1].start_X === offsetX ||
+        arcArr[arcArr.length - 1].start_Y === offsetY
+      ) {
+        cancel();
+        return;
+      }
     }
   }
 
+  imageData = ctx.getImageData(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+
   painting = false;
+
+  console.log(lineArr, rectArr, arcArr);
 }
 
 // onMouseLeave 이벤트 : 이벤트 요소 영역 밖으로 이동시
 function cancel() {
   if (painting) {
-    if (mode === "drag" && shape === "rect") {
-      dragArr.pop();
+    if (mode === "brush") {
+      lineArr.pop();
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      // ctx.clearRect(
-      //   dragArr[dragArr.length - 1].start_X,
-      //   dragArr[dragArr.length - 1].start_Y,
-      //   dragArr[dragArr.length - 1].width,
-      //   dragArr[dragArr.length - 1].height
-      // );
-
-      if (dragArr.length > 0) {
-        dragArr.forEach((rect) => {
-          ctx.strokeStyle = rect.rect_color;
-          ctx.fillStyle = rect.rect_color;
-          ctx.lineWidth = rect.rect_lineWidth;
-
-          ctx.strokeRect(rect.start_X, rect.start_Y, rect.width, rect.height);
-        });
-      }
-
-      if (lineArr.length > 0) {
-        lineArr.forEach((line) => {
-          ctx.beginPath();
-          ctx.moveTo(line.sX, line.sY);
-
-          line.path.forEach(({ line_X, line_Y }) => {
-            ctx.strokeStyle = line.line_color;
-            ctx.lineWidth = line.line_lineWidth;
-
-            ctx.lineTo(line_X, line_Y);
-            ctx.stroke();
-          });
-        });
-      }
+      ctx.putImageData(imageData, 0, 0);
     }
+    if (mode === "drag" && shape === "rect") {
+      rectArr.pop();
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.putImageData(imageData, 0, 0);
+    } else if (mode === "drag" && shape === "circle") {
+      arcArr.pop();
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.putImageData(imageData, 0, 0);
+    }
+
     painting = false;
   }
 }
@@ -171,6 +163,7 @@ function changeCursor(mode) {
     canvas.style.cursor = "url(eraser-fill.svg), auto";
   } else if (mode === "drag") {
     if (shape === "rect") canvas.style.cursor = "url(square.svg), auto";
+    else if (shape === "circle") canvas.style.cursor = "url(circle.svg), auto";
   } else {
     canvas.style.cursor = "auto";
   }
@@ -178,10 +171,7 @@ function changeCursor(mode) {
 
 // 마우스 클릭 후 그리기
 function onMouseMove(event) {
-  // console.log(event);
-
   const { offsetX, offsetY } = event;
-  // console.log(offsetX, offsetY);
 
   changeCursor(mode);
 
@@ -215,80 +205,70 @@ function onMouseMove(event) {
         ctx.beginPath();
         ctx.moveTo(offsetX, offsetY);
       } else {
-        ctx.strokeStyle = dragArr[dragArr.length - 1].rect_color;
-        ctx.fillStyle = dragArr[dragArr.length - 1].rect_color;
-        ctx.lineWidth = dragArr[dragArr.length - 1].rect_lineWidth;
+        rectArr[rectArr.length - 1].width =
+          offsetX - rectArr[rectArr.length - 1].start_X;
 
-        dragArr[dragArr.length - 1].width =
-          offsetX - dragArr[dragArr.length - 1].start_X;
-
-        dragArr[dragArr.length - 1].height =
-          offsetY - dragArr[dragArr.length - 1].start_Y;
+        rectArr[rectArr.length - 1].height =
+          offsetY - rectArr[rectArr.length - 1].start_Y;
 
         ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.putImageData(imageData, 0, 0);
 
-        if (lineArr.length > 0) {
-          lineArr.forEach((line) => {
-            ctx.beginPath();
-            ctx.moveTo(line.sX, line.sY);
+        if (rectArr.length > 0) {
+          rectArr.forEach((rect) => {
+            ctx.strokeStyle = rect.rect_color;
+            ctx.fillStyle = rect.rect_color;
+            ctx.lineWidth = rect.rect_lineWidth;
 
-            line.path.forEach(({ line_X, line_Y }) => {
-              ctx.strokeStyle = line.line_color;
-              ctx.lineWidth = line.line_lineWidth;
-
-              ctx.lineTo(line_X, line_Y);
-              ctx.stroke();
-            });
+            ctx.strokeRect(rect.start_X, rect.start_Y, rect.width, rect.height);
           });
         }
+      }
+    } else if (shape === "circle") {
+      if (painting) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.putImageData(imageData, 0, 0);
 
-        if (dragArr.length > 0) {
-          // dragArr.forEach((rect) => {
-          //   ctx.strokeStyle = rect.rect_color;
-          //   ctx.fillStyle = rect.rect_color;
-          //   ctx.lineWidth = rect.rect_lineWidth;
+        const sX = arcArr[arcArr.length - 1].start_X;
+        const sY = arcArr[arcArr.length - 1].start_Y;
 
-          //   ctx.strokeRect(rect.start_X, rect.start_Y, rect.width, rect.height);
-          // });
+        arcArr[arcArr.length - 1].radius = getDistance(
+          sX,
+          sY,
+          offsetX,
+          offsetY
+        );
 
-          for (let i = 0; i <= dragArr.length - 1; i++) {
-            ctx.strokeStyle = dragArr[i].rect_color;
-            ctx.fillStyle = dragArr[i].rect_color;
-            ctx.lineWidth = dragArr[i].rect_lineWidth;
+        if (arcArr.length > 0) {
+          arcArr.forEach((arc) => {
+            ctx.strokeStyle = arc.arc_color;
+            ctx.fillStyle = arc.arc_color;
+            ctx.lineWidth = arc.arc_lineWidth;
 
-            ctx.strokeRect(
-              dragArr[i].start_X,
-              dragArr[i].start_Y,
-              dragArr[i].width,
-              dragArr[i].height
+            ctx.beginPath();
+
+            ctx.arc(
+              arc.start_X,
+              arc.start_Y,
+              arc.radius,
+              arc.startAngle,
+              arc.endAngle
             );
-          }
+
+            ctx.stroke();
+          });
         }
-
-        // ctx.fillRect(
-        //   dragArr[dragArr.length - 1].start_X,
-        //   dragArr[dragArr.length - 1].start_Y,
-        //   offsetX - dragArr[dragArr.length - 1].start_X,
-        //   offsetY - dragArr[dragArr.length - 1].start_Y
-        // );
-
-        // ctx.clearRect(
-        //   dragArr[dragArr.length - 1].start_X,
-        //   dragArr[dragArr.length - 1].start_Y,
-        //   offsetX - dragArr[dragArr.length - 1].start_X,
-        //   offsetY - dragArr[dragArr.length - 1].start_Y
-        // );
-
-        //   ctx.strokeRect(
-        //     dragArr[dragArr.length - 1].start_X,
-        //     dragArr[dragArr.length - 1].start_Y,
-        //     offsetX - dragArr[dragArr.length - 1].start_X,
-        //     offsetY - dragArr[dragArr.length - 1].start_Y
-        //   );
-        // }
       }
     }
   }
+}
+
+// 드래그 원 반지름 구하기
+function getDistance(ax, ay, zx, zy) {
+  const dis_x = ax - zx;
+  const dix_y = ay - zy;
+  dist = Math.sqrt(Math.abs(dis_x * dis_x) + Math.abs(dix_y * dix_y));
+  return dist;
 }
 /////////////////////////////////// 모바일 ///////////////////////////////////
 
@@ -387,6 +367,12 @@ function handleRectBtnClick() {
   shape = "rect";
 }
 
+function handleCircleBtnClick() {
+  filling = false;
+  mode = "drag";
+  shape = "circle";
+}
+
 // Fill 일시 canvas 전체 색상 변경
 function handleCanvasClick() {
   if (filling) {
@@ -407,6 +393,16 @@ function handleSaveClick() {
 
 // 마우스 우클릭 방지
 function handleCM(event) {
+  event.preventDefault();
+}
+
+// 이전으로 되돌리기
+function handlePreClick(event) {
+  event.preventDefault();
+}
+
+// 다음으로 되돌리기
+function handleNextClick(event) {
   event.preventDefault();
 }
 
@@ -456,6 +452,18 @@ if (rectBtn) {
   rectBtn.addEventListener("click", handleRectBtnClick);
 }
 
+if (circleBtn) {
+  circleBtn.addEventListener("click", handleCircleBtnClick);
+}
+
 if (saveBtn) {
   saveBtn.addEventListener("click", handleSaveClick);
+}
+
+if (preBtn) {
+  preBtn.addEventListener("click", handlePreClick);
+}
+
+if (nextBtn) {
+  nextBtn.addEventListener("click", handleNextClick);
 }
