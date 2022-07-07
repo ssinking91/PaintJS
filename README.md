@@ -155,3 +155,76 @@ Painting Board made with VanillaJS
     // Clear part of the canvas
     ctx.clearRect(10, 10, 120, 100);
     ```
+
+<br/>
+
+---
+
+<br/>
+
+5.  ✔️ 캔버스(canvas)를 이용한 직사각형 그리기
+
+    👉 fillRect(x, y, width, height) : 색칠된 직사각형을 그림
+
+    👉 strokeRect(x, y, width, height) : 직사각형 윤곽선을 그림
+
+    👉 clearRect(x, y, width, height) : 특정 부분을 지우는 직사각형이며, 이 지워진 부분은 완전히 투명해 짐
+
+    (1) 직사각형 도형 예제
+
+    ```javascript
+    function draw() {
+      var canvas = document.getElementById("canvas");
+      if (canvas.getContext) {
+        var ctx = canvas.getContext("2d");
+
+        ctx.fillRect(25, 25, 100, 100);
+        ctx.clearRect(45, 45, 60, 60);
+        ctx.strokeRect(50, 50, 50, 50);
+      }
+    }
+    ```
+
+<br/>
+
+---
+
+<br/>
+
+6.  ✔️ 캔버스(canvas)를 이용한 원 그리기
+
+    👉 arc(x, y, radius, startAngle, endAngle, clockwise)
+
+    - x, y : 원을 그리게 될 가운데 위치
+
+    - radius : 반지름 값
+
+    - startAngle : angle 시작점
+
+    - endAngle : angle 끝나는 점
+
+    - clockwise : 옵션값. 시계 또는 반시계 방향을 결정함(기본값 false인 시계 방향)
+
+    ⭐ angle값에 따른 위치 알아보기
+
+    - startAngle과 endAngle은 원을 그릴때 시작하는 값과 끝 값을 나타냅니다. 아래 이미지는 angle값에 따른 위치를 나타내는데 시작점은 0 그리고 끝나는 지점은 Math.PI \* 2입니다.
+
+    - 참고로 위 스크린샷처럼 맨 위의 12 방향은 0이 아니라 Math.PI _ 1.5의 값을 가지게됩니다. 그렇기때문에 12시 방향에서 시작하려면 0값이 아니라 Math.PI _ 1.5를 시작점으로 설정하여야합니다. 이 부분이 혼동되기 쉬운 부분입니다. 동그란 원을 그린다면 문제가 될게 없지만 예를들어 12시에서 3시 방향까지 이어지는 원의 일부를 그린다면 다음처럼 시작과 끝을 설정해야합니다.
+
+    - startAngle : Math.PI \* 1.5
+    - endAngle : Math.PI \* 2
+
+    ```javascript
+    function draw() {
+      var canvas = document.getElementById("canvas");
+      if (canvas.getContext) {
+        var ctx = canvas.getContext("2d");
+
+        ctx.beginPath();
+        ctx.arc(50, 50, 20, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+    }
+    ```
+
+[ 더 알아보기 ](<https://webisfree.com/2018-06-07/[html5]-%EC%BA%94%EB%B2%84%EC%8A%A4(canvas)%EC%97%90-%EC%9B%90-%EA%B7%B8%EB%A6%AC%EA%B8%B0>)

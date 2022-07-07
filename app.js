@@ -14,63 +14,50 @@ const CANVAS_SIZE = 700;
 canvas.width = CANVAS_SIZE;
 canvas.height = CANVAS_SIZE;
 
-// fillStyle = color : 도형을 채우는 색을 설정합니다.
-// fillRect(x, y, width, height) : 색칠된 직사각형을 그립니다.
-// strokeStyle = color : 도형의 윤곽선 색을 설정합니다.
-// lineWidth = value : 이후 그려질 선의 두께를 설정합니다.
-
-// ✔️ 경로 그리기
-// 1. 경로를 생성합니다.
-// 2. 그리기 명령어를 사용하여 경로상에 그립니다.
-// 3. 경로가 한번 만들어졌다면, 경로를 렌더링 하기 위해서 윤곽선을 그리거나 도형 내부를 채울수 있습니다.
-
-// 1. beginPath() : 새로운 경로를 생성
-// 2-1. moveTo(x, y) : 펜을  x와 y 로 지정된 좌표로 옮김
-// 2-2. lineTo(x, y) : 현재의 드로잉 위치에서 x와 y로 지정된 위치까지 선을 그림
-// 3-1. stroke() : 윤곽선을 이용하여 도형을 그림
-// 3-2. fill() : 경로의 내부를 채워서 내부가 채워진 도형을 그림
-
-// 참고:  현재 열린 path가  비어있는 경우 ( beginPath() 메소드를 사용한 직 후, 혹은캔버스를 새로 생성한 직후), 첫 경로 생성 명령은 실제 동작에 상관 없이 moveTo()로 여겨지게 됩니다. 그렇기 때문에 경로를 초기화한 직후에는 항상 명확하게 시작 위치를 설정해 두는것이 좋습니다.
-// 참고:  fill() 메소드 호출 시, 열린 도형은 자동으로 닫히게 되므로  closePath()메소드를 호출하지 않아도 됩니다. 이것은 stroke() 메소드에는 적용되지 않습니다.
-// 참고:  closePath() : 현재 점 위치와 시작점 위치를 직선으로 이어서 도형을 닫음. 이미 도형이 닫혔거나 한 점만 존재한다면, 이 메소드는 아무것도 하지 않음
-// 참고 : offsetX, offsetY => 이벤트 대상이 기준
-//        - offsetX : 이벤트 대상 객체에서의 상대적 마우스 x좌표 위치를 반환
-//        - offsetY : 이벤트 대상 객체에서의 상대적 마우스 y좌표 위치를 반환
-
 ctx.fillStyle = "transparent";
 ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
-ctx.strokeStyle = INITIAL_COLOR;
-ctx.fillStyle = INITIAL_COLOR;
-ctx.lineWidth = 2.5;
 
-let mode = "brush";
+let color = INITIAL_COLOR;
+let lineWidth = 2.5;
+
 let painting = false;
 let filling = false;
+
+let mode = "brush";
 let shape = "rect";
-let color = INITIAL_COLOR;
+
+const lineArr = [];
 const dragArr = [];
 
-// if (dragArr.length > 1) {
-//   dragArr.forEach((rect) => {
-//     ctx.strokeRect(rect.start_X, rect.start_Y, rect.width, rect.height);
-//   });
-// }
 /////////////////////////////////// 데스크탑 ///////////////////////////////////
 
 function clickStartPainting(event) {
   painting = true;
-  document.body.style.overflow = "hidden"; // 스크롤 방지
+  // document.body.style.overflow = "hidden"; // 스크롤 방지
 
   const { offsetX, offsetY } = event;
 
-  if (mode === "drag") {
+  if (mode === "brush") {
+    if (painting) {
+      let linePath = {
+        path: [],
+        sX: offsetX,
+        sY: offsetY,
+        line_color: color,
+        line_lineWidth: lineWidth,
+      };
+
+      lineArr.push(linePath);
+    }
+  } else if (mode === "drag") {
     if (painting && shape === "rect") {
       let dragRect = {
         start_X: offsetX,
         start_Y: offsetY,
         width: 0,
         height: 0,
-        rect_strokeStyle: color,
+        rect_color: color,
+        rect_lineWidth: lineWidth,
       };
 
       dragArr.push(dragRect);
@@ -79,7 +66,7 @@ function clickStartPainting(event) {
 }
 
 function clickStopPainting(event) {
-  document.body.style.overflow = "unset"; // 스크롤 방지 해제
+  // document.body.style.overflow = "unset"; // 스크롤 방지 해제
 
   const { offsetX, offsetY } = event;
 
@@ -98,17 +85,33 @@ function clickStopPainting(event) {
       }
 
       // drag width, height 추가
-      dragArr[dragArr.length - 1].width = width;
-      dragArr[dragArr.length - 1].height = height;
+      // dragArr[dragArr.length - 1].width = width;
+      // dragArr[dragArr.length - 1].height = height;
 
-      if (dragArr.length >= 1) {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      // if (dragArr.length > 0) {
+      //   dragArr.forEach((rect) => {
+      //     ctx.strokeStyle = rect.rect_color;
+      //     ctx.fillStyle = rect.rect_color;
+      //     ctx.lineWidth = rect.rect_lineWidth;
 
-        dragArr.forEach((rect) => {
-          // strokeStyle = rect.rect_strokeStyle;
-          ctx.strokeRect(rect.start_X, rect.start_Y, rect.width, rect.height);
-        });
-      }
+      //     ctx.strokeRect(rect.start_X, rect.start_Y, rect.width, rect.height);
+      //   });
+      // }
+
+      // if (lineArr.length > 0) {
+      //   lineArr.forEach((line) => {
+      //     ctx.beginPath();
+      //     ctx.moveTo(line.sX, line.sY);
+
+      //     line.path.forEach(({ line_X, line_Y }) => {
+      //       ctx.strokeStyle = line.line_color;
+      //       ctx.lineWidth = line.line_lineWidth;
+
+      //       ctx.lineTo(line_X, line_Y);
+      //       ctx.stroke();
+      //     });
+      //   });
+      // }
     }
   }
 
@@ -121,10 +124,38 @@ function cancel() {
     if (mode === "drag" && shape === "rect") {
       dragArr.pop();
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      dragArr.forEach((rect) => {
-        strokeStyle = rect.rect_strokeStyle;
-        ctx.strokeRect(rect.start_X, rect.start_Y, rect.width, rect.height);
-      });
+
+      // ctx.clearRect(
+      //   dragArr[dragArr.length - 1].start_X,
+      //   dragArr[dragArr.length - 1].start_Y,
+      //   dragArr[dragArr.length - 1].width,
+      //   dragArr[dragArr.length - 1].height
+      // );
+
+      if (dragArr.length > 0) {
+        dragArr.forEach((rect) => {
+          ctx.strokeStyle = rect.rect_color;
+          ctx.fillStyle = rect.rect_color;
+          ctx.lineWidth = rect.rect_lineWidth;
+
+          ctx.strokeRect(rect.start_X, rect.start_Y, rect.width, rect.height);
+        });
+      }
+
+      if (lineArr.length > 0) {
+        lineArr.forEach((line) => {
+          ctx.beginPath();
+          ctx.moveTo(line.sX, line.sY);
+
+          line.path.forEach(({ line_X, line_Y }) => {
+            ctx.strokeStyle = line.line_color;
+            ctx.lineWidth = line.line_lineWidth;
+
+            ctx.lineTo(line_X, line_Y);
+            ctx.stroke();
+          });
+        });
+      }
     }
     painting = false;
   }
@@ -148,24 +179,32 @@ function changeCursor(mode) {
 // 마우스 클릭 후 그리기
 function onMouseMove(event) {
   // console.log(event);
-  const x = event.offsetX;
-  const y = event.offsetY;
+
+  const { offsetX, offsetY } = event;
+  // console.log(offsetX, offsetY);
 
   changeCursor(mode);
 
   if (mode === "fill" || mode === "brush") {
     if (!painting) {
       ctx.beginPath();
-      ctx.moveTo(x, y);
+      ctx.moveTo(offsetX, offsetY);
     } else {
-      ctx.lineTo(x, y);
+      ctx.lineWidth = lineWidth;
+
+      ctx.lineTo(offsetX, offsetY);
       ctx.stroke();
+
+      lineArr[lineArr.length - 1].path.push({
+        line_X: offsetX,
+        line_Y: offsetY,
+      });
     }
   } else if (mode === "erase") {
     if (painting) {
       ctx.clearRect(
-        x - ctx.lineWidth / 2,
-        y - ctx.lineWidth / 2,
+        offsetX - ctx.lineWidth / 2,
+        offsetY - ctx.lineWidth / 2,
         ctx.lineWidth * 5,
         ctx.lineWidth * 5
       );
@@ -174,26 +213,83 @@ function onMouseMove(event) {
     if (shape === "rect") {
       if (!painting) {
         ctx.beginPath();
-        ctx.moveTo(x, y);
+        ctx.moveTo(offsetX, offsetY);
       } else {
-        ctx.fillStyle = color;
-        ctx.fillRect(
-          dragArr[dragArr.length - 1].start_X,
-          dragArr[dragArr.length - 1].start_Y,
-          x - dragArr[dragArr.length - 1].start_X,
-          y - dragArr[dragArr.length - 1].start_Y
-        );
-        ctx.strokeRect(
-          dragArr[dragArr.length - 1].start_X,
-          dragArr[dragArr.length - 1].start_Y,
-          x - dragArr[dragArr.length - 1].start_X,
-          y - dragArr[dragArr.length - 1].start_Y
-        );
+        ctx.strokeStyle = dragArr[dragArr.length - 1].rect_color;
+        ctx.fillStyle = dragArr[dragArr.length - 1].rect_color;
+        ctx.lineWidth = dragArr[dragArr.length - 1].rect_lineWidth;
+
+        dragArr[dragArr.length - 1].width =
+          offsetX - dragArr[dragArr.length - 1].start_X;
+
+        dragArr[dragArr.length - 1].height =
+          offsetY - dragArr[dragArr.length - 1].start_Y;
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        if (lineArr.length > 0) {
+          lineArr.forEach((line) => {
+            ctx.beginPath();
+            ctx.moveTo(line.sX, line.sY);
+
+            line.path.forEach(({ line_X, line_Y }) => {
+              ctx.strokeStyle = line.line_color;
+              ctx.lineWidth = line.line_lineWidth;
+
+              ctx.lineTo(line_X, line_Y);
+              ctx.stroke();
+            });
+          });
+        }
+
+        if (dragArr.length > 0) {
+          // dragArr.forEach((rect) => {
+          //   ctx.strokeStyle = rect.rect_color;
+          //   ctx.fillStyle = rect.rect_color;
+          //   ctx.lineWidth = rect.rect_lineWidth;
+
+          //   ctx.strokeRect(rect.start_X, rect.start_Y, rect.width, rect.height);
+          // });
+
+          for (let i = 0; i <= dragArr.length - 1; i++) {
+            ctx.strokeStyle = dragArr[i].rect_color;
+            ctx.fillStyle = dragArr[i].rect_color;
+            ctx.lineWidth = dragArr[i].rect_lineWidth;
+
+            ctx.strokeRect(
+              dragArr[i].start_X,
+              dragArr[i].start_Y,
+              dragArr[i].width,
+              dragArr[i].height
+            );
+          }
+        }
+
+        // ctx.fillRect(
+        //   dragArr[dragArr.length - 1].start_X,
+        //   dragArr[dragArr.length - 1].start_Y,
+        //   offsetX - dragArr[dragArr.length - 1].start_X,
+        //   offsetY - dragArr[dragArr.length - 1].start_Y
+        // );
+
+        // ctx.clearRect(
+        //   dragArr[dragArr.length - 1].start_X,
+        //   dragArr[dragArr.length - 1].start_Y,
+        //   offsetX - dragArr[dragArr.length - 1].start_X,
+        //   offsetY - dragArr[dragArr.length - 1].start_Y
+        // );
+
+        //   ctx.strokeRect(
+        //     dragArr[dragArr.length - 1].start_X,
+        //     dragArr[dragArr.length - 1].start_Y,
+        //     offsetX - dragArr[dragArr.length - 1].start_X,
+        //     offsetY - dragArr[dragArr.length - 1].start_Y
+        //   );
+        // }
       }
     }
   }
 }
-
 /////////////////////////////////// 모바일 ///////////////////////////////////
 
 function touchStartPainting(event) {
@@ -253,7 +349,7 @@ function handleColorClick(event) {
 // 글씨 두께 변경
 function handleRangeChange(event) {
   const size = event.target.value;
-  ctx.lineWidth = size;
+  lineWidth = size;
 }
 
 // Fill, Paint 변경
