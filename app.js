@@ -26,10 +26,10 @@ let lineWidth = 2.5;
 let text_lineWidth;
 
 let font_size = () => {
-  if (canvas.width > 1200) return 36;
-  if (canvas.width > 992) return 30;
-  if (canvas.width > 768) return 24;
-  if (canvas.width > 480) return 18;
+  if (canvas.width > 1200) return 22;
+  if (canvas.width > 992) return 20;
+  if (canvas.width > 768) return 18;
+  if (canvas.width > 480) return 16;
 };
 
 let painting = false;
@@ -45,12 +45,86 @@ const textArr = [];
 
 let imageData;
 
+// text 줄바꿈
+function drawTextBox(
+  ctx,
+  text,
+  x,
+  y,
+  textBoxWidth,
+  spacing = 1.2,
+  font,
+  text_color
+) {
+  let line = "";
+  let fontSize = font_size();
+  let currentY = y;
+  let textBoxpadding;
+  let cnt = 0;
+  let rectPadding_1 = 10;
+  let rectPadding_2 = rectPadding_1 / 2;
+
+  ctx.textAlign = "start";
+  ctx.textBaseline = "top";
+  ctx.font = font;
+  ctx.fillStyle = text_color;
+
+  for (let i = 0; i < text.length; i++) {
+    let tempLine = line + text[i];
+    let tempWidth = ctx.measureText(tempLine).width;
+
+    // console.log(tempLine, tempWidth);
+
+    if (tempWidth < textBoxWidth - rectPadding_2) {
+      line = tempLine;
+      if (cnt === 0) textBoxpadding = (textBoxWidth - tempWidth) / 2;
+    } else {
+      cnt = 1;
+      ctx.fillText(line, x + textBoxpadding, currentY);
+
+      line = text[i];
+
+      currentY += fontSize * spacing;
+    }
+  }
+
+  //text
+  ctx.fillText(line, x + textBoxpadding, currentY);
+
+  // Rectangle
+  ctx.strokeRect(
+    x - rectPadding_2,
+    y - rectPadding_2,
+    textBoxWidth + rectPadding_1,
+    currentY - y + fontSize * spacing + rectPadding_1
+  );
+}
+
+// 커서 이미지 변경
+function changeCursor(mode) {
+  if (mode === "fill") {
+    canvas.style.cursor = "url(brush-fill.svg), auto";
+  } else if (mode === "brush") {
+    canvas.style.cursor = "url(pencil-fill.svg), auto";
+  } else if (mode === "erase") {
+    canvas.style.cursor = "url(eraser-fill.svg), auto";
+  } else if (mode === "drag") {
+    if (shape === "rect") canvas.style.cursor = "url(square.svg), auto";
+    else if (shape === "circle") canvas.style.cursor = "url(circle.svg), auto";
+    else if (shape === "text") canvas.style.cursor = "url(text.svg), auto";
+  } else {
+    canvas.style.cursor = "auto";
+  }
+}
+
 /////////////////////////////////// 데스크탑 ///////////////////////////////////
 
 function clickStartPainting(event) {
   painting = true;
   // document.body.style.overflow = "hidden"; // 스크롤 방지
   const { offsetX, offsetY } = event;
+
+  console.log(offsetX, offsetY);
 
   if (mode === "brush") {
     if (painting) {
@@ -89,18 +163,19 @@ function clickStartPainting(event) {
 
       arcArr.push(dragArc);
     } else if (painting && shape === "text") {
-      console.log("텍스트 시작");
+      console.log(font_size());
       let dragText = {
         text: "",
         start_X: offsetX,
         start_Y: offsetY,
+        textBoxWidth: 0,
         text_color: color,
         text_lineWidth: lineWidth,
-
         font: `bold ${font_size()}px Roboto`,
       };
 
       textArr.push(dragText);
+      console.log(textArr);
     }
   }
 
@@ -145,33 +220,27 @@ function clickStopPainting(event) {
       }
     }
     if (painting && shape === "text") {
-      // 클릭시 영역 선택 방지
-      // if (
-      //   textArr[textArr.length - 1].start_X === offsetX ||
-      //   textArr[textArr.length - 1].start_Y === offsetY
-      // ) {
-      //   cancel();
-      //   return;
-      // }
-
-      const content = prompt("내용은 무엇인가요?");
+      const content = prompt("✔️내용은 무엇인가요?");
 
       if (!content) {
         cancel();
         return;
       }
 
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.putImageData(imageData, 0, 0);
+
       textArr[textArr.length - 1].text = content;
 
-      ctx.textAlign = "start";
-      ctx.textBaseline = "top";
-      ctx.fillStyle = `${textArr[textArr.length - 1].text_color}`;
-      ctx.font = `${textArr[textArr.length - 1].font}`;
-
-      ctx.fillText(
+      drawTextBox(
+        ctx,
         textArr[textArr.length - 1].text,
         textArr[textArr.length - 1].start_X,
-        textArr[textArr.length - 1].start_Y
+        textArr[textArr.length - 1].start_Y,
+        textArr[textArr.length - 1].textBoxWidth,
+        (spacing = 1.2),
+        textArr[textArr.length - 1].font,
+        textArr[textArr.length - 1].text_color
       );
     }
   }
@@ -203,26 +272,10 @@ function cancel() {
       textArr.pop();
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.putImageData(imageData, 0, 0);
+      console.log(textArr);
     }
 
     painting = false;
-  }
-}
-
-// 커서 이미지 변경
-function changeCursor(mode) {
-  if (mode === "fill") {
-    canvas.style.cursor = "url(brush-fill.svg), auto";
-  } else if (mode === "brush") {
-    canvas.style.cursor = "url(pencil-fill.svg), auto";
-  } else if (mode === "erase") {
-    canvas.style.cursor = "url(eraser-fill.svg), auto";
-  } else if (mode === "drag") {
-    if (shape === "rect") canvas.style.cursor = "url(square.svg), auto";
-    else if (shape === "circle") canvas.style.cursor = "url(circle.svg), auto";
-    else if (shape === "text") canvas.style.cursor = "url(text.svg), auto";
-  } else {
-    canvas.style.cursor = "auto";
   }
 }
 
@@ -321,23 +374,24 @@ function onMouseMove(event) {
         ctx.beginPath();
         ctx.moveTo(offsetX, offsetY);
       } else {
-        // const rectSx = textArr[textArr.length - 1].start_X;
-        // const rectSy = textArr[textArr.length - 1].start_Y;
-        // const rectWidth = offsetX - textArr[textArr.length - 1].start_X;
-        // const rectHeight = offsetY - textArr[textArr.length - 1].start_Y;
+        textArr[textArr.length - 1].textBoxWidth =
+          offsetX - textArr[textArr.length - 1].start_X;
 
-        // font_size = (rectHeight * 2) / 3;
+        const rectSx = textArr[textArr.length - 1].start_X;
+        const rectSy = textArr[textArr.length - 1].start_Y;
+        const rectWidth = offsetX - textArr[textArr.length - 1].start_X;
+        const rectHeight = offsetY - textArr[textArr.length - 1].start_Y;
 
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.putImageData(imageData, 0, 0);
 
-        // if (textArr.length > 0) {
-        //   ctx.strokeStyle = textArr[textArr.length - 1].text_color;
-        //   ctx.fillStyle = textArr[textArr.length - 1].text_color;
-        //   ctx.lineWidth = textArr[textArr.length - 1].text_lineWidth;
+        if (textArr.length > 0) {
+          ctx.strokeStyle = textArr[textArr.length - 1].text_color;
+          ctx.fillStyle = textArr[textArr.length - 1].text_color;
+          ctx.lineWidth = textArr[textArr.length - 1].text_lineWidth;
 
-        //   ctx.strokeRect(rectSx, rectSy, rectWidth, rectHeight);
-        // }
+          ctx.strokeRect(rectSx, rectSy, rectWidth, rectHeight);
+        }
       }
     }
   }
