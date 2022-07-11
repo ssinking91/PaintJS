@@ -9,9 +9,26 @@ body {
   padding: 50px 0px;
 }
 
-.canvas {
+.canvasWrap {
+  position: relative;
   width: 700px;
   height: 700px;
+}
+
+/* .canvaswrap > textarea {
+  outline: none;
+  resize: none;
+  z-index: 10;
+  border: 1px dashed rgba(0, 0, 0, 0.5);
+} */
+
+.canvasWrap > * {
+  position: absolute;
+}
+
+.canvas {
+  width: 100%;
+  height: 100%;
   background-color: white;
   border-radius: 15px;
   box-shadow: 0 4px 6px rgba(50, 50, 93, 0.11), 0 1px 3px rgba(0, 0, 0, 0.08);

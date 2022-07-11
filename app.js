@@ -12,6 +12,8 @@ const saveBtn = document.getElementById("jsSave");
 const preBtn = document.getElementById("jsPre");
 const nextBtn = document.getElementById("jsNext");
 
+const canvasWrap = document.getElementById("jsWrap");
+
 const INITIAL_COLOR = "#2c2c2c";
 const CANVAS_SIZE = 700;
 
@@ -45,6 +47,122 @@ const textArr = [];
 
 let imageData;
 
+/////////////////////////////////////
+
+let isTextarea = false;
+
+//Function to dynamically add an input box:
+function addTextarea(textarea_x, textarea_y, textarea_width, textarea_height) {
+  if (isTextarea) {
+    cancel();
+    return;
+  }
+
+  console.log(textarea_x, textarea_y, textarea_width, textarea_height);
+
+  let Textarea = document.createElement("textarea");
+
+  Textarea.style.left = `${textarea_x}px`;
+  Textarea.style.top = `${textarea_y}px`;
+  Textarea.style.width = `${textarea_width}px`;
+  Textarea.style.height = `${textarea_height}px`;
+  Textarea.style.border = `1px dashed rgba(0, 0, 0, 0.5)`;
+  Textarea.style.font = `${font_size()}px sans-serif`;
+  Textarea.style.zIndex = `10`;
+  Textarea.style.outline = `none`;
+  Textarea.style.resize = `none`;
+  Textarea.setAttribute(`spellcheck`, `false`);
+
+  Textarea.onkeyup = handleTextareaEnter;
+
+  canvasWrap.appendChild(Textarea);
+
+  Textarea.focus();
+
+  isTextarea = true;
+}
+
+//Key handler for input box:
+function handleTextareaEnter(e) {
+  let keyCode = e.keyCode;
+
+  if (keyCode === 27) {
+    textArr.pop();
+    canvasWrap.removeChild(this);
+    isTextarea = false;
+    return;
+  } else if (keyCode === 13) {
+    textArr[textArr.length - 1].text = this.value;
+
+    drawText(
+      ctx,
+      textArr[textArr.length - 1].text,
+      textArr[textArr.length - 1].start_X,
+      textArr[textArr.length - 1].start_Y,
+      textArr[textArr.length - 1].textBoxWidth,
+      (spacing = 1.2),
+      textArr[textArr.length - 1].font,
+      textArr[textArr.length - 1].text_color
+    );
+
+    // drawTextBox(
+    //   ctx,
+    //   textArr[textArr.length - 1].text,
+    //   textArr[textArr.length - 1].start_X,
+    //   textArr[textArr.length - 1].start_Y,
+    //   textArr[textArr.length - 1].textBoxWidth,
+    //   (spacing = 1.2),
+    //   textArr[textArr.length - 1].font,
+    //   textArr[textArr.length - 1].text_color
+    // );
+
+    canvasWrap.removeChild(this);
+    isTextarea = false;
+  }
+}
+
+//Draw the text onto canvas:
+function drawText(
+  ctx,
+  text,
+  x,
+  y,
+  textBoxWidth,
+  spacing = 1.2,
+  font,
+  text_color
+) {
+  let line = "";
+  let fontSize = font_size();
+  let currentY = y;
+
+  ctx.textAlign = "start";
+  ctx.textBaseline = "top";
+  ctx.font = font;
+  ctx.fillStyle = text_color;
+
+  for (let i = 0; i < text.length; i++) {
+    let tempLine = line + text[i];
+    let tempWidth = ctx.measureText(tempLine).width;
+
+    // console.log(tempLine, tempWidth);
+
+    if (tempWidth < textBoxWidth) {
+      line = tempLine;
+    } else {
+      ctx.fillText(line, x, currentY);
+
+      line = text[i];
+
+      currentY += fontSize * spacing;
+    }
+  }
+
+  //text
+  ctx.fillText(line, x, currentY);
+}
+/////////////////////////////////////
+
 // text 줄바꿈
 function drawTextBox(
   ctx,
@@ -52,7 +170,7 @@ function drawTextBox(
   x,
   y,
   textBoxWidth,
-  spacing = 1.2,
+  spacing = 1.1,
   font,
   text_color
 ) {
@@ -119,6 +237,7 @@ function changeCursor(mode) {
 
 /////////////////////////////////// 데스크탑 ///////////////////////////////////
 
+/////////////////////////////////// clickStartPainting
 function clickStartPainting(event) {
   painting = true;
   // document.body.style.overflow = "hidden"; // 스크롤 방지
@@ -163,15 +282,16 @@ function clickStartPainting(event) {
 
       arcArr.push(dragArc);
     } else if (painting && shape === "text") {
-      console.log(font_size());
       let dragText = {
         text: "",
         start_X: offsetX,
         start_Y: offsetY,
         textBoxWidth: 0,
+        textBoxHeight: 0,
         text_color: color,
         text_lineWidth: lineWidth,
-        font: `bold ${font_size()}px Roboto`,
+        // font: `bold ${font_size()}px Roboto`,
+        font: `${font_size()}px sans-serif`,
       };
 
       textArr.push(dragText);
@@ -182,6 +302,7 @@ function clickStartPainting(event) {
   imageData = ctx.getImageData(0, 0, CANVAS_SIZE, CANVAS_SIZE);
 }
 
+/////////////////////////////////// clickStopPainting
 function clickStopPainting(event) {
   // document.body.style.overflow = "unset"; // 스크롤 방지 해제
 
@@ -196,6 +317,7 @@ function clickStopPainting(event) {
         cancel();
         return;
       }
+      imageData = ctx.getImageData(0, 0, CANVAS_SIZE, CANVAS_SIZE);
     }
   }
   if (mode === "drag") {
@@ -208,6 +330,8 @@ function clickStopPainting(event) {
         cancel();
         return;
       }
+
+      imageData = ctx.getImageData(0, 0, CANVAS_SIZE, CANVAS_SIZE);
     }
     if (painting && shape === "circle") {
       // 클릭시 영역 선택 방지
@@ -218,11 +342,16 @@ function clickStopPainting(event) {
         cancel();
         return;
       }
+
+      imageData = ctx.getImageData(0, 0, CANVAS_SIZE, CANVAS_SIZE);
     }
     if (painting && shape === "text") {
-      const content = prompt("✔️내용은 무엇인가요?");
-
-      if (!content) {
+      if (
+        textArr[textArr.length - 1].start_X === offsetX ||
+        textArr[textArr.length - 1].start_Y === offsetY ||
+        textArr[textArr.length - 1].textBoxWidth < 0 ||
+        textArr[textArr.length - 1].textBoxHeight < 0
+      ) {
         cancel();
         return;
       }
@@ -230,22 +359,16 @@ function clickStopPainting(event) {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.putImageData(imageData, 0, 0);
 
-      textArr[textArr.length - 1].text = content;
-
-      drawTextBox(
-        ctx,
-        textArr[textArr.length - 1].text,
+      addTextarea(
         textArr[textArr.length - 1].start_X,
         textArr[textArr.length - 1].start_Y,
         textArr[textArr.length - 1].textBoxWidth,
-        (spacing = 1.2),
-        textArr[textArr.length - 1].font,
-        textArr[textArr.length - 1].text_color
+        textArr[textArr.length - 1].textBoxHeight
       );
     }
   }
 
-  imageData = ctx.getImageData(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+  // imageData = ctx.getImageData(0, 0, CANVAS_SIZE, CANVAS_SIZE);
 
   painting = false;
 
@@ -269,6 +392,7 @@ function cancel() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.putImageData(imageData, 0, 0);
     } else if (mode === "drag" && shape === "text") {
+      console.log("텍스트 삭제");
       textArr.pop();
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.putImageData(imageData, 0, 0);
@@ -279,6 +403,7 @@ function cancel() {
   }
 }
 
+/////////////////////////////////// onMouseMove
 // 마우스 클릭 후 그리기
 function onMouseMove(event) {
   const { offsetX, offsetY } = event;
@@ -377,6 +502,9 @@ function onMouseMove(event) {
         textArr[textArr.length - 1].textBoxWidth =
           offsetX - textArr[textArr.length - 1].start_X;
 
+        textArr[textArr.length - 1].textBoxHeight =
+          offsetY - textArr[textArr.length - 1].start_Y;
+
         const rectSx = textArr[textArr.length - 1].start_X;
         const rectSy = textArr[textArr.length - 1].start_Y;
         const rectWidth = offsetX - textArr[textArr.length - 1].start_X;
@@ -387,10 +515,13 @@ function onMouseMove(event) {
 
         if (textArr.length > 0) {
           ctx.strokeStyle = textArr[textArr.length - 1].text_color;
-          ctx.fillStyle = textArr[textArr.length - 1].text_color;
-          ctx.lineWidth = textArr[textArr.length - 1].text_lineWidth;
+          // ctx.fillStyle = textArr[textArr.length - 1].text_color;
+          // ctx.lineWidth = textArr[textArr.length - 1].text_lineWidth;
+          ctx.lineWidth = 0.5;
 
+          ctx.setLineDash([1, 2]);
           ctx.strokeRect(rectSx, rectSy, rectWidth, rectHeight);
+          ctx.setLineDash([]);
         }
       }
     }
@@ -525,11 +656,24 @@ function handleCanvasClick(event) {
 // canvas 그림 다운로드
 function handleSaveClick() {
   // canvas.toDataURL() : 마우스 오른쪽 단추로 클릭해 메뉴를 열 때 발생.
-  const image = canvas.toDataURL();
+  // const image = canvas.toDataURL();
+  // const link = document.createElement("a");
+  // link.href = image;
+  // link.download = "PaintJS[🎨]";
+  // link.click();
+
+  // 대상 SVG 텍스트 가져오기
+  const svgText = new XMLSerializer().serializeToString(canvas);
+  // 저장할 Blob 객체 만들기
+  const svgBlob = new Blob([svgText], { type: "image/svg+xml;charset=utf-8" });
+  const svgUrl = URL.createObjectURL(svgBlob);
+
   const link = document.createElement("a");
-  link.href = image;
-  link.download = "PaintJS[🎨]";
+  link.href = svgUrl;
+  link.download = "svgJS[🎨]";
   link.click();
+
+  console.log(svgUrl);
 }
 
 // 마우스 우클릭 방지
