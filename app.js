@@ -34,11 +34,11 @@ let font_size = () => {
   if (canvas.width > 480) return 16;
 };
 
-let painting = false;
-let filling = false;
+// let mode = "brush";
+// let shape;
 
-let mode = "brush";
-let shape;
+let mode = "drag";
+let shape = "text";
 
 const lineArr = [];
 const rectArr = [];
@@ -47,77 +47,170 @@ const textArr = [];
 
 let imageData;
 
+let painting = false;
+let filling = false;
+let isTextarea = false;
+let isTextModify = false;
+let TextModifyIndex;
+
 /////////////////////////////////////
 
-let isTextarea = false;
+// 이벤트 취소
+function cancel() {
+  console.log("cancel//////////////////////////");
+  if (painting) {
+    if (mode === "brush") {
+      lineArr.pop();
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.putImageData(imageData, 0, 0);
+    } else if (mode === "drag" && shape === "rect") {
+      rectArr.pop();
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.putImageData(imageData, 0, 0);
+    } else if (mode === "drag" && shape === "circle") {
+      arcArr.pop();
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.putImageData(imageData, 0, 0);
+    } else if (mode === "drag" && shape === "text") {
+      console.log("cnacel 텍스트 삭제");
+      if (!isTextModify) {
+        textArr.pop();
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.putImageData(imageData, 0, 0);
+      }
+      console.log(textArr);
+    }
+
+    painting = false;
+  }
+}
 
 //Function to dynamically add an input box:
-function addTextarea(textarea_x, textarea_y, textarea_width, textarea_height) {
+function addTextarea(
+  preText,
+  textarea_x,
+  textarea_y,
+  textarea_width,
+  textarea_height
+) {
   if (isTextarea) {
-    cancel();
+    console.log("cancel addTextarea");
     return;
   }
-
-  console.log(textarea_x, textarea_y, textarea_width, textarea_height);
+  console.log(TextModifyIndex);
+  console.log(preText, textarea_x, textarea_y, textarea_width, textarea_height);
 
   let Textarea = document.createElement("textarea");
 
-  Textarea.style.left = `${textarea_x}px`;
-  Textarea.style.top = `${textarea_y}px`;
-  Textarea.style.width = `${textarea_width}px`;
-  Textarea.style.height = `${textarea_height}px`;
-  Textarea.style.border = `1px dashed rgba(0, 0, 0, 0.5)`;
-  Textarea.style.font = `${font_size()}px sans-serif`;
-  Textarea.style.zIndex = `10`;
-  Textarea.style.outline = `none`;
-  Textarea.style.resize = `none`;
+  if (isTextModify) {
+    console.log("isTextModify 시작");
+    console.log(preText);
+
+    ctx.beginPath();
+    ctx.clearRect(textarea_x, textarea_y, textarea_width, textarea_height);
+
+    console.log("isTextModify 시작2");
+
+    Textarea.id = `drawTextBox`;
+    Textarea.value = preText;
+    Textarea.style.left = `${textarea_x}px`;
+    Textarea.style.top = `${textarea_y}px`;
+    Textarea.style.width = `${textarea_width}px`;
+    Textarea.style.height = `${textarea_height}px`;
+    Textarea.style.border = `1px dashed rgba(0, 0, 0, 0.5)`;
+    Textarea.style.font = `${font_size()}px sans-serif`;
+    Textarea.style.color = INITIAL_COLOR;
+    Textarea.style.zIndex = `10`;
+    Textarea.style.outline = `none`;
+    Textarea.style.overflow = `hidden`;
+    Textarea.style.backgroundColor = `transparent`;
+  } else {
+    console.log("isTextModify 시작3");
+
+    Textarea.id = `drawTextBox`;
+    Textarea.style.left = `${textarea_x}px`;
+    Textarea.style.top = `${textarea_y}px`;
+    Textarea.style.width = `${textarea_width}px`;
+    Textarea.style.height = `${textarea_height}px`;
+    Textarea.style.border = `1px dashed rgba(0, 0, 0, 0.5)`;
+    Textarea.style.font = `${font_size()}px sans-serif`;
+    Textarea.style.zIndex = `10`;
+    Textarea.style.outline = `none`;
+    Textarea.style.overflow = `hidden`;
+    Textarea.style.backgroundColor = `transparent`;
+  }
+
+  // Textarea.style.resize = `none`;
   Textarea.setAttribute(`spellcheck`, `false`);
 
   Textarea.onkeyup = handleTextareaEnter;
 
   canvasWrap.appendChild(Textarea);
 
+  console.log("isTextModify 시작4");
+
   Textarea.focus();
 
   isTextarea = true;
+  console.log("isTextModify 시작5");
 }
 
 //Key handler for input box:
 function handleTextareaEnter(e) {
   let keyCode = e.keyCode;
 
-  if (keyCode === 27) {
+  if (keyCode === 27 || this.value === "\n") {
+    console.log("esc//////////////////////////");
     textArr.pop();
     canvasWrap.removeChild(this);
     isTextarea = false;
+    isTextModify = false;
     return;
   } else if (keyCode === 13) {
-    textArr[textArr.length - 1].text = this.value;
+    console.log("enter//////////////////////////");
 
-    drawText(
-      ctx,
-      textArr[textArr.length - 1].text,
-      textArr[textArr.length - 1].start_X,
-      textArr[textArr.length - 1].start_Y,
-      textArr[textArr.length - 1].textBoxWidth,
-      (spacing = 1.2),
-      textArr[textArr.length - 1].font,
-      textArr[textArr.length - 1].text_color
-    );
+    if (isTextModify) {
+      console.log("isTextModify///////////////");
+      console.log(this.value);
 
-    // drawTextBox(
-    //   ctx,
-    //   textArr[textArr.length - 1].text,
-    //   textArr[textArr.length - 1].start_X,
-    //   textArr[textArr.length - 1].start_Y,
-    //   textArr[textArr.length - 1].textBoxWidth,
-    //   (spacing = 1.2),
-    //   textArr[textArr.length - 1].font,
-    //   textArr[textArr.length - 1].text_color
-    // );
+      textArr[TextModifyIndex].textBoxWidth = parseFloat(this.style.width);
+      textArr[TextModifyIndex].text = this.value;
+
+      drawText(
+        ctx,
+        this.value,
+        textArr[TextModifyIndex].start_X,
+        textArr[TextModifyIndex].start_Y,
+        textArr[TextModifyIndex].textBoxWidth,
+        textArr[TextModifyIndex].font,
+        textArr[TextModifyIndex].text_color,
+        (spacing = 1.2)
+      );
+
+      textArr.pop();
+      isTextModify = false;
+    } else {
+      console.log("isTextarea////////////////////");
+
+      textArr[textArr.length - 1].textBoxWidth = parseFloat(this.style.width);
+      textArr[textArr.length - 1].text = this.value;
+
+      drawText(
+        ctx,
+        textArr[textArr.length - 1].text,
+        textArr[textArr.length - 1].start_X,
+        textArr[textArr.length - 1].start_Y,
+        textArr[textArr.length - 1].textBoxWidth,
+        textArr[textArr.length - 1].font,
+        textArr[textArr.length - 1].text_color,
+        (spacing = 1.2)
+      );
+    }
 
     canvasWrap.removeChild(this);
     isTextarea = false;
+
+    console.log(textArr);
   }
 }
 
@@ -128,13 +221,18 @@ function drawText(
   x,
   y,
   textBoxWidth,
-  spacing = 1.2,
   font,
-  text_color
+  text_color,
+  spacing = 1.2
 ) {
   let line = "";
   let fontSize = font_size();
   let currentY = y;
+  let drawTextBoxWidth = 0;
+  let drawTextBoxHeight = 0;
+  let cnt = 0;
+
+  console.log("drawtext 시작");
 
   ctx.textAlign = "start";
   ctx.textBaseline = "top";
@@ -144,8 +242,6 @@ function drawText(
   for (let i = 0; i < text.length; i++) {
     let tempLine = line + text[i];
     let tempWidth = ctx.measureText(tempLine).width;
-
-    // console.log(tempLine, tempWidth);
 
     if (tempWidth < textBoxWidth) {
       line = tempLine;
@@ -155,68 +251,86 @@ function drawText(
       line = text[i];
 
       currentY += fontSize * spacing;
+
+      if (cnt === 0) drawTextBoxWidth = tempWidth;
+      drawTextBoxHeight += fontSize * spacing;
+
+      cnt++;
     }
   }
+  console.log("drawtext 시작2");
+
+  drawTextBoxHeight += fontSize;
 
   //text
   ctx.fillText(line, x, currentY);
+
+  isTextModify
+    ? ((textArr[TextModifyIndex].textBoxWidth = drawTextBoxWidth),
+      (textArr[TextModifyIndex].textBoxHeight = drawTextBoxHeight))
+    : ((textArr[textArr.length - 1].textBoxWidth = drawTextBoxWidth),
+      (textArr[textArr.length - 1].textBoxHeight = drawTextBoxHeight));
+
+  // ctx.strokeRect(x, y, drawTextBoxWidth, drawTextBoxHeight);
+  console.log(textArr);
 }
+
 /////////////////////////////////////
 
 // text 줄바꿈
-function drawTextBox(
-  ctx,
-  text,
-  x,
-  y,
-  textBoxWidth,
-  spacing = 1.1,
-  font,
-  text_color
-) {
-  let line = "";
-  let fontSize = font_size();
-  let currentY = y;
-  let textBoxpadding;
-  let cnt = 0;
-  let rectPadding_1 = 10;
-  let rectPadding_2 = rectPadding_1 / 2;
+// function drawTextBox(
+//   ctx,
+//   text,
+//   x,
+//   y,
+//   textBoxWidth,
+//   font,
+//   text_color,
+//   spacing = 1.1
+// ) {
+//   let line = "";
+//   let fontSize = font_size();
+//   let currentY = y;
+//   let textBoxpadding;
+//   let cnt = 0;
+//   let rectPadding_1 = 10;
+//   let rectPadding_2 = rectPadding_1 / 2;
 
-  ctx.textAlign = "start";
-  ctx.textBaseline = "top";
-  ctx.font = font;
-  ctx.fillStyle = text_color;
+//   ctx.textAlign = "start";
+//   ctx.textBaseline = "top";
+//   ctx.font = font;
+//   ctx.fillStyle = text_color;
 
-  for (let i = 0; i < text.length; i++) {
-    let tempLine = line + text[i];
-    let tempWidth = ctx.measureText(tempLine).width;
+//   for (let i = 0; i < text.length; i++) {
+//     let tempLine = line + text[i];
+//     let tempWidth = ctx.measureText(tempLine).width;
 
-    // console.log(tempLine, tempWidth);
+//     // console.log(tempLine, tempWidth);
 
-    if (tempWidth < textBoxWidth - rectPadding_2) {
-      line = tempLine;
-      if (cnt === 0) textBoxpadding = (textBoxWidth - tempWidth) / 2;
-    } else {
-      cnt = 1;
-      ctx.fillText(line, x + textBoxpadding, currentY);
+//     if (tempWidth < textBoxWidth - rectPadding_2) {
+//       line = tempLine;
+//       if (cnt === 0) textBoxpadding = (textBoxWidth - tempWidth) / 2;
+//     } else {
+//       cnt = 1;
+//       ctx.fillText(line, x + textBoxpadding, currentY);
 
-      line = text[i];
+//       line = text[i];
 
-      currentY += fontSize * spacing;
-    }
-  }
+//       currentY += fontSize * spacing;
+//     }
+//   }
 
-  //text
-  ctx.fillText(line, x + textBoxpadding, currentY);
+//   //text
+//   ctx.fillText(line, x + textBoxpadding, currentY);
 
-  // Rectangle
-  ctx.strokeRect(
-    x - rectPadding_2,
-    y - rectPadding_2,
-    textBoxWidth + rectPadding_1,
-    currentY - y + fontSize * spacing + rectPadding_1
-  );
-}
+//   // Rectangle
+//   ctx.strokeRect(
+//     x - rectPadding_2,
+//     y - rectPadding_2,
+//     textBoxWidth + rectPadding_1,
+//     currentY - y + fontSize * spacing + rectPadding_1
+//   );
+// }
 
 // 커서 이미지 변경
 function changeCursor(mode) {
@@ -233,6 +347,22 @@ function changeCursor(mode) {
   } else {
     canvas.style.cursor = "auto";
   }
+}
+
+// textarea 클릭시 이전 textarea 생성
+function preTextareaCreate(x, y) {
+  const textArrIndex = textArr.findIndex(
+    ({ start_X, start_Y, textBoxWidth, textBoxHeight }) => {
+      return (
+        start_X < x &&
+        x < start_X + textBoxWidth &&
+        start_Y < y &&
+        y < start_Y + textBoxHeight
+      );
+    }
+  );
+
+  return textArrIndex;
 }
 
 /////////////////////////////////// 데스크탑 ///////////////////////////////////
@@ -289,13 +419,14 @@ function clickStartPainting(event) {
         textBoxWidth: 0,
         textBoxHeight: 0,
         text_color: color,
+        textBox_color: "#2c2c2c",
         text_lineWidth: lineWidth,
         // font: `bold ${font_size()}px Roboto`,
         font: `${font_size()}px sans-serif`,
       };
 
       textArr.push(dragText);
-      console.log(textArr);
+      // console.log(textArr);
     }
   }
 
@@ -314,19 +445,25 @@ function clickStopPainting(event) {
         lineArr[lineArr.length - 1].sX === offsetX ||
         lineArr[lineArr.length - 1].sY === offsetY
       ) {
+        console.log("설마 1");
         cancel();
         return;
       }
+
       imageData = ctx.getImageData(0, 0, CANVAS_SIZE, CANVAS_SIZE);
     }
-  }
-  if (mode === "drag") {
+  } else if (mode === "erase") {
+    if (painting) {
+      imageData = ctx.getImageData(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+    }
+  } else if (mode === "drag") {
     if (painting && shape === "rect") {
       // 클릭시 영역 선택 방지
       if (
         rectArr[rectArr.length - 1].start_X === offsetX ||
         rectArr[rectArr.length - 1].start_Y === offsetY
       ) {
+        console.log("설마 2");
         cancel();
         return;
       }
@@ -339,6 +476,7 @@ function clickStopPainting(event) {
         arcArr[arcArr.length - 1].start_X === offsetX ||
         arcArr[arcArr.length - 1].start_Y === offsetY
       ) {
+        console.log("설마 3");
         cancel();
         return;
       }
@@ -347,60 +485,84 @@ function clickStopPainting(event) {
     }
     if (painting && shape === "text") {
       if (
-        textArr[textArr.length - 1].start_X === offsetX ||
-        textArr[textArr.length - 1].start_Y === offsetY ||
-        textArr[textArr.length - 1].textBoxWidth < 0 ||
-        textArr[textArr.length - 1].textBoxHeight < 0
+        (textArr[textArr.length - 1].start_X === offsetX &&
+          textArr[textArr.length - 1].start_Y === offsetY) ||
+        (textArr[textArr.length - 1].textBoxWidth < 0 &&
+          textArr[textArr.length - 1].textBoxHeight < 0)
       ) {
+        console.log("에러 1");
+
+        if (
+          preTextareaCreate(
+            textArr[textArr.length - 1].start_X,
+            textArr[textArr.length - 1].start_Y
+          ) >= 0
+        ) {
+          console.log("preTextareaCreate 성공");
+
+          TextModifyIndex = preTextareaCreate(
+            textArr[textArr.length - 1].start_X,
+            textArr[textArr.length - 1].start_Y
+          );
+
+          const x = textArr[textArr.length - 1].start_X;
+          const y = textArr[textArr.length - 1].start_Y;
+
+          const preTextarea = textArr.filter(
+            ({ start_X, start_Y, textBoxWidth, textBoxHeight }) => {
+              return (
+                start_X < x &&
+                x < start_X + textBoxWidth &&
+                start_Y < y &&
+                y < start_Y + textBoxHeight
+              );
+            }
+          );
+          painting = false;
+          isTextModify = true;
+
+          console.log("에러 2");
+          console.log(preTextarea);
+
+          addTextarea(
+            preTextarea[0].text,
+            preTextarea[0].start_X,
+            preTextarea[0].start_Y,
+            preTextarea[0].textBoxWidth,
+            preTextarea[0].textBoxHeight
+          );
+
+          console.log("에러 3");
+
+          return;
+        }
+
+        console.log("에러 4");
         cancel();
+
         return;
       }
 
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.putImageData(imageData, 0, 0);
 
+      console.log("에러 5");
+
       addTextarea(
+        textArr[textArr.length - 1].text,
         textArr[textArr.length - 1].start_X,
         textArr[textArr.length - 1].start_Y,
         textArr[textArr.length - 1].textBoxWidth,
         textArr[textArr.length - 1].textBoxHeight
       );
     }
-  }
 
-  // imageData = ctx.getImageData(0, 0, CANVAS_SIZE, CANVAS_SIZE);
-
-  painting = false;
-
-  console.log(lineArr, rectArr, arcArr, textArr);
-}
-
-// onMouseLeave 이벤트 : 이벤트 요소 영역 밖으로 이동시
-function cancel() {
-  if (painting) {
-    if (mode === "brush") {
-      lineArr.pop();
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.putImageData(imageData, 0, 0);
-    }
-    if (mode === "drag" && shape === "rect") {
-      rectArr.pop();
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.putImageData(imageData, 0, 0);
-    } else if (mode === "drag" && shape === "circle") {
-      arcArr.pop();
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.putImageData(imageData, 0, 0);
-    } else if (mode === "drag" && shape === "text") {
-      console.log("텍스트 삭제");
-      textArr.pop();
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.putImageData(imageData, 0, 0);
-      console.log(textArr);
-    }
+    // imageData = ctx.getImageData(0, 0, CANVAS_SIZE, CANVAS_SIZE);
 
     painting = false;
   }
+
+  console.log(lineArr, rectArr, arcArr, textArr);
 }
 
 /////////////////////////////////// onMouseMove
@@ -426,7 +588,10 @@ function onMouseMove(event) {
       });
     }
   } else if (mode === "erase") {
-    if (painting) {
+    if (!painting) {
+      ctx.beginPath();
+      ctx.moveTo(offsetX, offsetY);
+    } else {
       ctx.clearRect(
         offsetX - ctx.lineWidth / 2,
         offsetY - ctx.lineWidth / 2,
@@ -499,29 +664,34 @@ function onMouseMove(event) {
         ctx.beginPath();
         ctx.moveTo(offsetX, offsetY);
       } else {
-        textArr[textArr.length - 1].textBoxWidth =
-          offsetX - textArr[textArr.length - 1].start_X;
+        console.log(isTextModify, painting);
+        if (!isTextModify) {
+          textArr[textArr.length - 1].textBoxWidth =
+            offsetX - textArr[textArr.length - 1].start_X;
 
-        textArr[textArr.length - 1].textBoxHeight =
-          offsetY - textArr[textArr.length - 1].start_Y;
+          textArr[textArr.length - 1].textBoxHeight =
+            offsetY - textArr[textArr.length - 1].start_Y;
 
-        const rectSx = textArr[textArr.length - 1].start_X;
-        const rectSy = textArr[textArr.length - 1].start_Y;
-        const rectWidth = offsetX - textArr[textArr.length - 1].start_X;
-        const rectHeight = offsetY - textArr[textArr.length - 1].start_Y;
+          const rectSx = textArr[textArr.length - 1].start_X;
+          const rectSy = textArr[textArr.length - 1].start_Y;
+          const rectWidth = offsetX - textArr[textArr.length - 1].start_X;
+          const rectHeight = offsetY - textArr[textArr.length - 1].start_Y;
 
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.putImageData(imageData, 0, 0);
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          ctx.putImageData(imageData, 0, 0);
 
-        if (textArr.length > 0) {
-          ctx.strokeStyle = textArr[textArr.length - 1].text_color;
-          // ctx.fillStyle = textArr[textArr.length - 1].text_color;
-          // ctx.lineWidth = textArr[textArr.length - 1].text_lineWidth;
-          ctx.lineWidth = 0.5;
+          if (textArr.length > 0) {
+            ctx.strokeStyle = textArr[textArr.length - 1].textBox_color;
+            // ctx.fillStyle = textArr[textArr.length - 1].text_color;
+            // ctx.lineWidth = textArr[textArr.length - 1].text_lineWidth;
+            ctx.lineWidth = 0.5;
 
-          ctx.setLineDash([1, 2]);
-          ctx.strokeRect(rectSx, rectSy, rectWidth, rectHeight);
-          ctx.setLineDash([]);
+            ctx.setLineDash([1, 2]);
+            ctx.strokeRect(rectSx, rectSy, rectWidth, rectHeight);
+
+            ctx.lineWidth = lineWidth;
+            ctx.setLineDash([]);
+          }
         }
       }
     }
@@ -692,11 +862,12 @@ function handleNextClick(event) {
 }
 
 if (canvas) {
+  canvasWrap.addEventListener("mouseleave", cancel);
+
   // 데스크탑
   canvas.addEventListener("mousemove", onMouseMove);
   canvas.addEventListener("mousedown", clickStartPainting);
   canvas.addEventListener("mouseup", clickStopPainting);
-  canvas.addEventListener("mouseleave", cancel);
   canvas.addEventListener("click", handleCanvasClick);
 
   // contextmenu : 마우스 오른쪽 메뉴 선택 이벤트
