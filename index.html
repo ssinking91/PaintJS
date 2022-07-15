@@ -25,26 +25,29 @@
       <button id="jsText">Text</button>
       <button id="jsText">Text</button>
       <button id="jsSave">Save</button>
-      <input type="file" accept="image/*" id="jsImage" />
-
+      <label for="jsImage">
+        upload
+        <input type="file" accept="image/*" id="jsImage" />
+      </label>
       <!-- <button id="jsPre">pre</button> -->
       <!-- <button id="jsNext">next</button> -->
     </div>
-    <div class="controls__colors" id="jsColors">
-      <div class="controls__color jsColor" style="background-color: #2c2c2c" />
-    </div>
-    <div class="controls__color jsColor" style="background-color: white"></div>
-    <div class="controls__color jsColor" style="background-color: #ff3b30"></div>
-    <div class="controls__color jsColor" style="background-color: #ff9500"></div>
-    <div class="controls__color jsColor" style="background-color: #ffcc00"></div>
-    <div class="controls__color jsColor" style="background-color: #4cd963"></div>
-    <div class="controls__color jsColor" style="background-color: #5ac8fa"></div>
-    <div class="controls__color jsColor" style="background-color: #0579ff"></div>
-    <div class="controls__color jsColor" style="background-color: #5856d6"></div>
-  </div>
-  </div>
 
-  <script src="app.js"></script>
+
+    <div class="controls__colors" id="jsColors">
+      <div id="currentColor"></div>
+      <div class="controls__color jsColor" style="background-color: #2c2c2c"></div>
+      <div class="controls__color jsColor" style="background-color: white"></div>
+      <div class="controls__color jsColor" style="background-color: #ff3b30"></div>
+      <div class="controls__color jsColor" style="background-color: #ff9500"></div>
+      <div class="controls__color jsColor" style="background-color: #ffcc00"></div>
+      <div class="controls__color jsColor" style="background-color: #4cd963"></div>
+      <div class="controls__color jsColor" style="background-color: #5ac8fa"></div>
+      <div class="controls__color jsColor" style="background-color: #0579ff"></div>
+      <div class="controls__color jsColor" style="background-color: #5856d6"></div>
+    </div>
+
+    <script src="app.js"></script>
 </body>
 
 </html>

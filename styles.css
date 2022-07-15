@@ -15,13 +15,6 @@ body {
   height: 700px;
 }
 
-/* .canvaswrap > textarea {
-  outline: none;
-  resize: none;
-  z-index: 10;
-  border: 1px dashed rgba(0, 0, 0, 0.5);
-} */
-
 .canvasWrap > * {
   position: absolute;
 }
@@ -45,7 +38,8 @@ body {
   margin-bottom: 30px;
 }
 
-.controls__btns button {
+.controls__btns button,
+label {
   all: unset;
   cursor: pointer;
   background-color: white;
@@ -65,16 +59,51 @@ body {
   transform: scale(0.98);
 }
 
+.controls__btns label {
+  all: unset;
+  cursor: pointer;
+  background-color: white;
+  padding: 5px 0px;
+  width: 80px;
+  text-align: center;
+  border-radius: 5px;
+  box-shadow: 0 4px 6px rgba(50, 50, 93, 0.11), 0 1px 3px rgba(0, 0, 0, 0.08);
+  border: 2px solid rgba(0, 0, 0, 0.2);
+  color: rgba(0, 0, 0, 0.7);
+  text-transform: uppercase;
+  font-weight: 800;
+  font-size: 12px;
+}
+
+.controls__btns #jsImage {
+  display: none;
+}
+
 .controls .controls__colors {
   display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.controls__colors #currentColor {
+  width: 40px;
+  height: 40px;
+  border: 5px solid white;
+  margin-right: 30px;
+}
+
+.controls__colors .controls__color:hover {
+  transform: scale(1.2);
 }
 
 .controls__colors .controls__color {
   width: 50px;
   height: 50px;
-  border-radius: 25px;
+  border-radius: 50%;
+  border: 5px solid white;
   cursor: pointer;
   box-shadow: 0 4px 6px rgba(50, 50, 93, 0.11), 0 1px 3px rgba(0, 0, 0, 0.08);
+  transition: transform ease-in-out 0.1s;
 }
 
 .controls .controls__range {

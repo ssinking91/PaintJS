@@ -12,11 +12,14 @@ const preBtn = document.getElementById("jsPre");
 const nextBtn = document.getElementById("jsNext");
 const imageBtn = document.getElementById("jsImage");
 
+const currentColor = document.getElementById("currentColor");
+
 const canvasWrap = document.getElementById("jsWrap");
 
 const INITIAL_COLOR = "#2c2c2c";
 const CANVAS_SIZE = 700;
 
+currentColor.style.backgroundColor = INITIAL_COLOR;
 canvas.width = CANVAS_SIZE;
 canvas.height = CANVAS_SIZE;
 
@@ -709,6 +712,7 @@ function handleTouchMove(event) {
 // 색상 변경
 function handleColorClick(event) {
   color = event.target.style.backgroundColor;
+  currentColor.style.backgroundColor = color;
   ctx.strokeStyle = color;
   ctx.fillStyle = color;
 }
